@@ -1,3 +1,10 @@
+/*
+	MQTT Services
+	Author: Trieu Le
+	Created Date: 31/07/2018
+	Description: This is simple service for receiving MQTT payload (JSON Format) and stored it into MongoDB
+*/
+// Requires libraries 
 var mqtt = require('mqtt');
 var mongodbURI = 'mongodb://trieule:ttp2018@ds259175.mlab.com:59175/smarthome';
 var deviceRoot = "demo/device/";
@@ -5,29 +12,30 @@ var collection,mqtt_client;
 var mongoose = require('mongoose');
 
 mongoose.Promise = global.Promise;
+// MongoDB connection options
 const connectOptions = { 
   useMongoClient: true,
   autoReconnect: true
 };
-
+// Create MongoDB connection
 var db = mongoose.connection;
-
+// Connecting to MongoDB 
 db.on('connecting', function() 
 {
 	console.log('connecting to MongoDB...');
 });
-
+// Error issues during connect to MongoDB 
 db.on('error', function(error) 
 {
 	console.error('Error in MongoDb connection: ' + error);
 	mongoose.disconnect();
 });
-
+// Connected to MongoDB 
 db.on('connected', function() 
 {
 	console.log('MongoDB connected!');
 });
-
+// Opened MongoDB connection success
 db.once('open', function() 
 {
 	console.log('MongoDB connection opened!');
@@ -72,30 +80,51 @@ db.once('open', function()
 		});
 	});
 });
-
+// Reconnecting to MongoDB 
 db.on('reconnected', function () 
 {
 	console.log('MongoDB reconnected!');
 });
-
+// Disconnected to MongoDB 
 db.on('disconnected', function() 
 {
 	console.log('MongoDB disconnected!');
 	mongoose.connect(mongodbURI, connectOptions);
 });
-
+// Connecting to MongoDB via URI with options
 mongoose.connect(mongodbURI, connectOptions);
-
+// Pasing MQTT Payload
 function payload_paser(topic,message) {
 	console.log("Received topic: " + topic);
 	console.log("Received message: " + message);
-	
+	// Convert payload to String
 	var stringBuf = message.toString('utf-8');
 	
 	try 
 	{
-		var myobj3 = JSON.parse(stringBuf);
-		db.collection("customers").insertOne(myobj3, function(err, res)
+		// Parser JSON Object
+		var jsonData = JSON.parse(stringBuf);
+		console.log("jsonData: " + jsonData);
+		try
+		{
+			console.log("jsonData.status: " + jsonData.status);
+			if(jsonData.status == get)
+			{
+				var publish_options = 
+				{
+					  retain:false,
+					  qos: 1
+				};	
+				client.publish('SERVICE_STATUS', "OK",publish_options);
+				console.log("Publish message to topic SERVICE_STATUS");
+			}
+		}
+		catch (e)
+		{
+			console.log("[Error] Payload is not a JSON object !");
+		}
+		// Save data into MongoDB
+		db.collection("sensor_datas").insertOne(jsonData, function(err, res)
 		{
 			if (err) 
 			{
@@ -108,7 +137,7 @@ function payload_paser(topic,message) {
 	} 
 	catch (e)
 	{
-		console.log("not JSON");
+		console.log("[Error] Payload is not a JSON object !");
 	}
 }
 
