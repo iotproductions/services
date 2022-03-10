@@ -22,7 +22,7 @@ var db = mongoose.connection;
 // Connecting to MongoDB 
 db.on('connecting', function() 
 {
-	console.log('connecting to MongoDB...');
+	console.log('connecting to MongoDB, please wait...');
 });
 // Error issues during connect to MongoDB 
 db.on('error', function(error) 
